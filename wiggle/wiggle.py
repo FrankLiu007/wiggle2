@@ -1,51 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def wiggle_input_check(data, tt, xx, scale, verbose):
-    ''' Helper function for wiggle() and traces() to check input
 
-    '''
-    # Input check for verbose
-    if not isinstance(verbose, bool):
-        raise TypeError("verbose must be a bool")
+def calculate_time_axis(traces):
+    min_time=traces[0]["begin_time"]
+    max_time=traces[0]["begin_time"]+traces[0]["delta"]*len(traces[0]["data"])
+    for i in range(1,len(traces)):
+        t0=traces[i]["begin_time"]
+        t1=traces[0]["delta"]*len(traces[i]["data"])
+        if t0<min_time:
+            min_time=t0        
+        if t0+t1>max_time:
+            max_time=t1+t0
+    return [min_time,max_time]
 
-    # Input check for data
-    if type(data).__module__ != np.__name__:
-        raise TypeError("data must be a numpy array")
-
-    if len(data.shape) != 2:
-        raise ValueError("data must be a 2D array")
-
-    # Input check for tt
-    if tt is None :
-        if type(tt).__module__ != np.__name__:
-            raise TypeError("tt must be a numpy array")
-        if len(tt.shape) != 1:
-            raise ValueError("tt must be a 1D array")
-        if tt.shape[0] != data.shape[0]:
-            raise ValueError("tt must have same as data's rows")
-
-    # Input check for xx
-    if not (xx is None) :
- 
-        if type(xx).__module__ != np.__name__:
-            raise TypeError("tt must be a numpy array")
-        if len(xx.shape) != 1:
-            raise ValueError("tt must be a 1D array")
-        if tt.shape[0] != data.shape[1]:
-            raise ValueError("tt must have same as data's rows")
-        if verbose:
-            print(xx)
-
-    # Input check for streth factor (scale)
-    if not isinstance(scale, (int, float)):
-        raise TypeError("Strech factor(scale) must be a number")
-
-
-    return True
-
-
-def wiggle(data, tt=None, xx=None,ori='v',norm="trace", color='k', scale=0.2, verbose=False):
+###------------------------------------------
+def wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
     '''Wiggle plot of a sesimic data section
     add parameter ori(orientation):
         v: verticle
@@ -61,60 +31,54 @@ def wiggle(data, tt=None, xx=None,ori='v',norm="trace", color='k', scale=0.2, ve
         wiggle(data, tt, xx)
         wiggle(data, tt, xx, color)
         fi = wiggle(data, tt, xx, color, scale, verbose)
-
-
     '''
-    if xx is None:
-        xx = np.arange(data.shape[0])
-        if verbose:
-            print("xx is automatically generated.")
-            print(xx)
-    if tt is None:
-        tt = np.arange(data.shape[1])
-        if verbose:
-            print("tt is automatically generated.")
-            print(tt)
-    # Input check
-    wiggle_input_check(data, tt, xx, scale,verbose)
-    
+
+    xx = np.arange(len(traces))  ##using 
 
     # Compute trace horizontal spacing
     ts = np.min(np.diff(xx))
 
     # Rescale data by trace_spacing and strech_factor
     if norm=="trace":
-        for i in range(0, data.shape[0]):
-            print("max=", np.max(data[i,:]))
-            data[i,:] = data[i,:]/np.max(data[i,:])*scale
+        for i in range(0, len(traces)):
+            
+            traces[i]["data"] = traces[i]["data"]/np.max(traces[i]["data"])*0.5
             #data = data / data_max_std * ts * scale
     elif norm=="all":
-        data=data/data.max()*ts*scale
+        pass
+    #data=data/data.max()*ts*scale
 
     # Plot data using matplotlib.pyplot
-    Ntr = data.shape[0]
 
     ax = plt.gca()
+    ntraces=len(traces)
+    time_range=calculate_time_axis(traces)
+    print("time_range=", time_range)
+    for i in range(len(traces)):
+        trace = traces[i]
+        offset = i
+        tt=[]
+        for j in range(0,len(trace["data"])):
+            t0=j*trace["delta"]+trace["begin_time"]
+            tt.append(t0)
 
-    for ntr in range(Ntr):
-        trace = data[ ntr,:]
-        
-        offset = xx[ntr]
-
-        if verbose:
-            print(offset)
-
-        if ori=='v':
-            ax.plot(trace + offset, tt, color)
-            ax.fill_betweenx(tt, offset,trace + offset, where=trace>0,facecolor=color)
+        if ori=='v':            
+            ax.set_xticks (xx)
+            ax.set_ylim(time_range)
+            ax.plot(trace["data"] + offset, tt, color)
+            ax.fill_betweenx(tt, offset,trace["data"] + offset, where=trace["data"]>0,facecolor=color)
             
         elif ori=='h':
-            ax.plot(tt, trace + offset, color)
-            ax.fill_between(tt, offset, trace + offset, where=trace>0, facecolor=color) 
+            ax.set_yticks (xx)
+            ax.set_xlim(time_range)
+            ax.plot(tt, trace["data"] + offset, color)
+            ax.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=color) 
     if ori=="v":
-        ax.invert_yaxis()    
+        ax.invert_yaxis() 
 
 
 if __name__ == '__main__':
-    data = np.random.randn(10, 100)
-    wiggle(data, ori='v',color='red')
+    trace1={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
+    trace2={"delta":0.1, "begin_time":0, "data":np.random.randn( 100)}
+    wiggle([trace1, trace2], ori='v',color='red')
     plt.show()
