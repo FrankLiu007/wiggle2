@@ -15,7 +15,7 @@ def calculate_time_axis(traces):
     return [min_time,max_time]
 
 ###------------------------------------------
-def wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
+def plot_wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
     '''Wiggle plot of a sesimic data section
     add parameter ori(orientation):
         v: verticle
@@ -36,7 +36,7 @@ def wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
     xx = np.arange(len(traces))  ##using 
 
     # Compute trace horizontal spacing
-    ts = np.min(np.diff(xx))
+    #ts = np.min(np.diff(xx))
 
     # Rescale data by trace_spacing and strech_factor
     if norm=="trace":
@@ -75,10 +75,11 @@ def wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
             ax.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=color) 
     if ori=="v":
         ax.invert_yaxis() 
+    return ax
 
 
 if __name__ == '__main__':
     trace1={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
     trace2={"delta":0.1, "begin_time":0, "data":np.random.randn( 100)}
-    wiggle([trace1, trace2], ori='v',color='red')
+    plot_wiggle([trace1, trace2], ori='v',color='red')
     plt.show()
