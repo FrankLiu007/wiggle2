@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matplotlib.widgets import Button
 
 def calculate_time_axis(traces):
     min_time=traces[0]["begin_time"]
@@ -15,7 +15,7 @@ def calculate_time_axis(traces):
     return [min_time,max_time]
 
 ###------------------------------------------
-def plot_wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False):
+def plot_wiggle(traces,fig=None, ori='v',norm="trace", color='k', scale=0.5, verbose=False):
     '''Wiggle plot of a sesimic data section
     add parameter ori(orientation):
         v: verticle
@@ -33,6 +33,12 @@ def plot_wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False
         fi = wiggle(data, tt, xx, color, scale, verbose)
     '''
 
+    if not fig:
+        fig=plt.figure()
+        ax = fig.add_subplot()
+    else:
+        ax = fig.add_subplot()
+
     xx = np.arange(len(traces))  ##using 
 
     # Compute trace horizontal spacing
@@ -42,15 +48,11 @@ def plot_wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False
     if norm=="trace":
         for i in range(0, len(traces)):
             
-            traces[i]["data"] = traces[i]["data"]/np.max(traces[i]["data"])*0.5
-            #data = data / data_max_std * ts * scale
+            traces[i]["data"] = traces[i]["data"]/np.max(traces[i]["data"])*scale
+
     elif norm=="all":
         pass
-    #data=data/data.max()*ts*scale
-
-    # Plot data using matplotlib.pyplot
-
-    ax = plt.gca()
+    
     ntraces=len(traces)
     time_range=calculate_time_axis(traces)
     print("time_range=", time_range)
@@ -75,8 +77,20 @@ def plot_wiggle(traces,ori='v',norm="trace", color='k', scale=0.5, verbose=False
             ax.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=color) 
     if ori=="v":
         ax.invert_yaxis() 
+    add_button(ax)
     return ax
 
+def addButtonCallBack():
+
+def add_button(ax ):
+    xmin,xmax=ax.get_xlim()
+    callback = Index()
+    add_scale = plt.axes([(xmax-xmin)/2, 0, 0.1, 0.075])
+    axnext = plt.axes([0.81, 0, 0.1, 0.075])
+    bnext = Button(axnext, 'Next')
+    bnext.on_clicked(callback.next)
+    bprev = Button(axprev, 'Previous')
+    bprev.on_clicked(callback.prev)
 
 if __name__ == '__main__':
     trace1={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
