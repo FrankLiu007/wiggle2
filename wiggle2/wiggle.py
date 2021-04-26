@@ -77,11 +77,11 @@ def plot_wiggle(traces,fig=None, ori='v',norm="trace", color='k', scale=0.5, ver
             ax.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=color) 
     if ori=="v":
         ax.invert_yaxis() 
-    add_button(ax)
+    #add_button(ax)
     return ax
 
 def addButtonCallBack():
-
+    pass
 def add_button(ax ):
     xmin,xmax=ax.get_xlim()
     callback = Index()
