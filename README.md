@@ -1,12 +1,14 @@
-#Large modification of 
+#wiggle2
 
-# Wiggle Plot for Seismic Data Section
+## Wiggle Plot for Seismic Data by liu qimin 
 
-[![Build Status](https://travis-ci.org/gatechzhu/wiggle.svg?branch=master)](https://travis-ci.org/gatechzhu/wiggle)
+![Alt text](screenshot.png "ScreenShot")
+
 
 ## Introduction
 Utility to plot seismic data, inspired by [wiggle](https://github.com/lijunzh/wiggle) function.
 I provide more options, such as orientation, normalization method, scale. 
+This tool used fillbetween and fillbetweenx in the matplotlib package
 
 ## Dependancy
 - [NumPy](http://www.numpy.org/)
@@ -27,10 +29,18 @@ python setup.py install
 ### Ussage
 ```
 from wiggle2 import wiggle
-trace1={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
-trace2={"delta":0.1, "begin_time":0, "data":np.random.randn( 100)}
+import numpy as np
+import matplotlib.pyplot as plt
 
-ax=wiggle.plot_wiggle([trace1, trace2], ori='v',color='red')
+traces=[]
+for i in range(0,50):
+    trace={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
+    traces.append(trace)
+wig=wiggle(traces, ori='v')
+wig.plot_wiggle()
 plt.show()
-```
 
+```
+### Problems
+> 1. Sometimes the plot takes too much time
+> 2. 

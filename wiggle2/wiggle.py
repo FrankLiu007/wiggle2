@@ -1,92 +1,168 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
+from matplotlib.widgets import Slider, CheckButtons,RangeSlider,RadioButtons
+import copy
+class wiggle:
+    def __init__(self, traces=None, ori='v', norm="trace", scale=0.5 ):
+        self.traces=traces
 
-def calculate_time_axis(traces):
-    min_time=traces[0]["begin_time"]
-    max_time=traces[0]["begin_time"]+traces[0]["delta"]*len(traces[0]["data"])
-    for i in range(1,len(traces)):
-        t0=traces[i]["begin_time"]
-        t1=traces[0]["delta"]*len(traces[i]["data"])
-        if t0<min_time:
-            min_time=t0        
-        if t0+t1>max_time:
-            max_time=t1+t0
-    return [min_time,max_time]
+        self.ori=ori
+        self.norm=norm
 
-###------------------------------------------
-def plot(traces,fig=None, ori='v',norm="trace", color='k', scale=0.5, verbose=False):
-    '''Wiggle plot of a sesimic data section
-    add parameter ori(orientation):
-        v: verticle
-        h: horizontal
-    add parameter norm (normalization method):
-        trace: normalize by trace
-        all: normalize by the max element of 
-    rename sf(scale factor) to scale
+        self.scale=scale
+        self.fig=plt.figure(111,(8,6))
+        self.wiggle_axis=None
+        #plt.subplots_adjust(left=0.2)
 
-    Syntax examples:
-        wiggle(data)
-        wiggle(data, tt)
-        wiggle(data, tt, xx)
-        wiggle(data, tt, xx, color)
-        fi = wiggle(data, tt, xx, color, scale, verbose)
-    '''
-    ax=plt.gca()
+        self.amplitude_slider=None
+        self.negative_fill_enabled=False
+        self.negative_fill_color=None
+        self.positive_fill_enabled = True
+        self.positive_fill_color = "black"
+
+        self.add_amplitude_slider()
+        self.add_checkbuttons()
+        self.tmp_traces=copy.copy(traces)
+        self.update_traces()
+
+    def add_checkbuttons(self):
+
+        rax1 = plt.axes( [0.05, 0.5, 0.1, 0.3])
+        plt.title("Positive Fill Color")
+        self.radio = RadioButtons(rax1, ('None', 'black', 'red', 'blue', 'gray'), (False,True,False, False, False))
+        self.positive_fill_enabled=True
+        self.radio.on_clicked(self.positive_wiggle_fill)
+
+        rax2 = plt.axes([0.05, 0.1, 0.1, 0.3])
+        plt.title("Nagative Fill Color")
+        self.radio2 = RadioButtons(rax2, ('None', 'black', 'red', 'blue', 'gray'), (False,True,False, False, False))
+        self.negative_fill_enabled = True
+        self.radio2.on_clicked( self.negative_wiggle_fill)
+
+    def positive_wiggle_fill(self,label):
 
 
-    xx = np.arange(len(traces))  ##using 
+        self.positive_fill_color = label
+        if label=="None":
+            self.positive_fill_color=None
+        self.plot_wiggle()
+        plt.draw()
+
+    def negative_wiggle_fill(self,label  ):
+
+        self.negative_fill_color = label
+        if label=="None":
+            self.negative_fill_color=None
+        self.plot_wiggle()
+        plt.draw()
+
+    def add_amplitude_slider(self):
+        ax = plt.axes([0.2, 0.9, 0.5, 0.05])
+        self.amplitude_slider = Slider(
+            ax=ax,
+            label="Amplitude",
+            valmin=0,
+            valmax=5,
+            valinit=1
+        )
+        self.amplitude_slider.on_changed(self.update_scale)
+    def update_scale(self,val):
+        self.scale=self.amplitude_slider.val
+        self.update_traces()
+        self.plot_wiggle()
+
+    def update_traces(self):
+        ntraces = len(self.traces)
+
+        if self.norm=="trace":
+            for i in range(0, ntraces):
+                self.tmp_traces[i]["data"] = self.traces[i]["data"]/np.max(self.traces[i]["data"]) * self.scale
+
+        elif self.norm=="all":
+            pass
+
+    def calculate_time_axis(self):
+        traces=self.traces
+        min_time=traces[0]["begin_time"]
+        max_time=traces[0]["begin_time"]+traces[0]["delta"]*len(traces[0]["data"])
+        for i in range(1,len(traces)):
+            t0=traces[i]["begin_time"]
+            t1=traces[0]["delta"]*len(traces[i]["data"])
+            if t0<min_time:
+                min_time=t0
+            if t0+t1>max_time:
+                max_time=t1+t0
+        return [min_time,max_time]
+
+    ###------------------------------------------
+    def plot_wiggle(self):
+        '''Wiggle plot of a sesimic data section
+        add parameter ori(orientation):
+            v: verticle
+            h: horizontal
+        add parameter norm (normalization method):
+            trace: normalize by trace
+            all: normalize by the max element of
+        rename sf(scale factor) to scale
+
+        Syntax examples:
+            wiggle(data)
+            wiggle(data, tt)
+            wiggle(data, tt, xx)
+            wiggle(data, tt, xx, color)
+            fi = wiggle(data, tt, xx, color, scale, verbose)
+        '''
 
 
-    if norm=="trace":
-        for i in range(0, len(traces)):
-            
-            traces[i]["data"] = traces[i]["data"]/np.max(traces[i]["data"])*scale
+        if self.wiggle_axis:
+            plt.axis('off')
+            self.wiggle_axis = None
 
-    elif norm=="all":
-        pass
-    
-    ntraces=len(traces)
-    time_range=calculate_time_axis(traces)
-    print("time_range=", time_range)
-    for i in range(len(traces)):
-        trace = traces[i]
-        offset = i
-        tt=[]
-        for j in range(0,len(trace["data"])):
-            t0=j*trace["delta"]+trace["begin_time"]
-            tt.append(t0)
+        self.wiggle_axis=self.fig.add_subplot()
+        plt.subplots_adjust(left=0.2)
 
-        if ori=='v':            
-            ax.set_xticks (xx)
-            ax.set_ylim(time_range)
-            ax.plot(trace["data"] + offset, tt, color)
-            ax.fill_betweenx(tt, offset,trace["data"] + offset, where=trace["data"]>0,facecolor=color)
-            
-        elif ori=='h':
-            ax.set_yticks (xx)
-            ax.set_xlim(time_range)
-            ax.plot(tt, trace["data"] + offset, color)
-            ax.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=color) 
-    if ori=="v":
-        ax.invert_yaxis() 
-    #add_button(ax)
-    return ax
+        xx = np.arange(len(self.traces))  ##using
 
-def addButtonCallBack():
-    pass
-def add_button(ax ):
-    xmin,xmax=ax.get_xlim()
-    callback = Index()
-    add_scale = plt.axes([(xmax-xmin)/2, 0, 0.1, 0.075])
-    axnext = plt.axes([0.81, 0, 0.1, 0.075])
-    bnext = Button(axnext, 'Next')
-    bnext.on_clicked(callback.next)
-    bprev = Button(axprev, 'Previous')
-    bprev.on_clicked(callback.prev)
+
+
+        time_range=self.calculate_time_axis()
+
+        for i, trace in enumerate(self.tmp_traces):
+
+            offset = i
+            tt=[]
+            for j in range(0,len(trace["data"])):
+                t0=j*trace["delta"]+trace["begin_time"]
+                tt.append(t0)
+
+            if self.ori=='v':
+                self.wiggle_axis.set_xticks (xx)
+                self.wiggle_axis.set_ylim(time_range)
+                self.wiggle_axis.plot(trace["data"] + offset, tt, color="black")
+                if self.negative_fill_color :
+                    self.wiggle_axis.fill_betweenx(tt, offset,trace["data"] + offset, where=trace["data"]<0,facecolor=self.negative_fill_color)
+                if self.positive_fill_color:
+                    self.wiggle_axis.fill_betweenx(tt, offset,trace["data"] + offset, where=trace["data"]>0,facecolor=self.positive_fill_color)
+
+            elif self.ori=='h':
+                self.wiggle_axis.set_yticks (xx)
+                self.wiggle_axis.set_xlim(time_range)
+                self.wiggle_axis.plot(tt, trace["data"] + offset, color="black")
+                if self.negative_fill_color:
+                    self.wiggle_axis.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]<0, facecolor=self.negative_fill_color)
+                if self.positive_fill_color:
+                    self.wiggle_axis.fill_between(tt, offset, trace["data"] + offset, where=trace["data"]>0, facecolor=self.positive_fill_color)
+
+        if self.ori=="v":
+            self.wiggle_axis.invert_yaxis()
+
 
 if __name__ == '__main__':
-    trace1={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
-    trace2={"delta":0.1, "begin_time":0, "data":np.random.randn( 100)}
-    plot([trace1, trace2], ori='v',color='red')
+
+    traces=[]
+    for i in range(0,50):
+        trace={"delta":0.1, "begin_time":5, "data":np.random.randn( 100)}
+        traces.append(trace)
+    wig=wiggle(traces, ori='v')
+    wig.plot_wiggle()
     plt.show()

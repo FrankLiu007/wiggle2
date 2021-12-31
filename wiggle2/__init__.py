@@ -1,1 +1,1 @@
-from .wiggle import plot
+from .wiggle import wiggle
